@@ -2,9 +2,69 @@ const countdownElement = document.getElementById('countdown');
 const canvas = document.getElementById('fireworks');
 const ctx = canvas.getContext('2d');
 
+// 添加点击计数变量和计时器
+let clickCount = 0;
+let clickTimer = null;
+
+// 添加标题点击处理函数
+function handleTitleClick(event) {
+  // 确保只在标题文本上触发
+  if (event.target.classList.contains('countdown-title')) {
+    clickCount++;
+    
+    // 清除之前的计时器
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+    }
+    
+    // 设置新的计时器，2秒内没有新的点击就重置计数
+    clickTimer = setTimeout(() => {
+      clickCount = 0;
+    }, 2000);
+    
+    // 如果点击次数达到3次，触发测试功能
+    if (clickCount === 3) {
+      startTestMode();
+      clickCount = 0; // 重置点击计数
+      clearTimeout(clickTimer);
+    }
+  }
+}
+
+// 添加点击事件监听
+countdownElement.addEventListener('click', handleTitleClick);
+
+// 将原来的测试按钮功能改为函数
+function startTestMode() {
+  // 创建一个新的模拟日期，设置为2025年最后15秒
+  const simulatedDate = new Date('2025-12-31T23:59:45');
+  
+  // 设置测试模式
+  window.testMode = simulatedDate;
+  
+  // 更新显示逻辑
+  function updateTestCountdown() {
+    const now = new Date(window.testMode.getTime() + 1000);
+    window.testMode = now;
+    updateCountdown();
+  }
+  
+  // 清除之前的定时器
+  clearInterval(interval);
+  
+  // 重新开始倒计时，使用新的更新函数
+  interval = setInterval(updateTestCountdown, 1000);
+  
+  // 立即更新一次显示
+  updateCountdown();
+}
+
+// 将 interval 变量移到全局作用域
+let interval;
+
 // 计算距离2026年元旦的时间
 function getTimeUntil2026() {
-  const now = new Date();
+  const now = window.testMode || new Date();
   const newYear2026 = new Date('2026-01-01T00:00:00');
   const diff = newYear2026 - now;
 
@@ -25,10 +85,11 @@ function updateCountdown() {
   
   if (t.total <= 0) {
     clearInterval(interval);
-    countdownElement.innerHTML = '<div class="countdown-title">2026新年快乐！</div>';
+    countdownElement.innerHTML = '<div class="new-year-title">2026新年快乐！</div>';
     startFireworks();
     fireworksTimer = setTimeout(() => {
       stopFireworks();
+      window.testMode = null; // 重置测试模式
     }, 30000);
     return;
   }
@@ -42,7 +103,7 @@ function updateCountdown() {
         startFireworks();
       }
     } else {
-      // 10-30秒显示00:00:xx格式
+      // 11-15秒显示00:00:xx格式
       countdownElement.innerHTML = `
         <div class="countdown-title">倒计时</div>
         <div class="countdown-time">00:00:${String(t.seconds).padStart(2, '0')}</div>
@@ -170,5 +231,11 @@ function stopFireworks() {
   clearInterval(fireworksInterval);
 }
 
-const interval = setInterval(updateCountdown, 1000);
-animate();
+// 修改最后的初始化代码
+function initCountdown() {
+  interval = setInterval(updateCountdown, 1000);
+  animate();
+}
+
+// 替换原来的直接调用
+initCountdown();
